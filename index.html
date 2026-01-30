@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kotodama Ritual - Onmyōji Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div id="game-container">
+        <header class="status-bar">
+            <div class="hp-container">
+                <span>YOKAI HP</span>
+                <div class="hp-bar-bg">
+                    <div id="hp-fill" style="width: 100%;"></div>
+                </div>
+            </div>
+            <div class="timer-container">
+                <span>⏱️ <span id="time-val">90</span>s</span>
+            </div>
+        </header>
+
+        <main class="arena">
+            <div class="yokai-sprite">
+                <div class="yokai-glow"></div>
+                <img src="https://api.dicebear.com/7.x/bottts/svg?seed=yokai" alt="Yokai">
+            </div>
+            
+            <div class="word-zone" id="word-zone">
+                <span class="placeholder">Susun Kotodama...</span>
+            </div>
+        </main>
+
+        <footer class="player-area">
+            <div class="controls">
+                <button onclick="clearWord()" class="btn-alt">BATAL</button>
+                <button onclick="shuffleDeck()" class="btn-alt">SHUFFLE (-5s)</button>
+                <button onclick="confirmWord()" class="btn-primary">KONFIRMASI</button>
+            </div>
+            
+            <div class="hand" id="player-hand">
+                <div class="card">あ</div>
+                <div class="card">い</div>
+                <div class="card">う</div>
+                <div class="card">え</div>
+                <div class="card">お</div>
+            </div>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
