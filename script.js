@@ -1,6 +1,5 @@
 /**
  * KOTODAMA RITUAL - CORE ENGINE (LEVEL SYSTEM + RECYCLE DECK)
- * Updated with Button State Validation
  */
 
 let ALL_LEVELS_DATA = null;
@@ -19,9 +18,6 @@ let timeLeft = 90;
 let yokaiHP = 100;
 let gameActive = false;
 
-/**
- * 1. LOADING DATABASE & LEVEL SYSTEM
- */
 async function loadDatabase() {
     try {
         const response = await fetch('database.json');
@@ -61,20 +57,16 @@ function initLevel(level) {
     
     shuffle(deck);
     drawCards();
-    renderWordZone(); // Pastikan tombol segel terkunci di awal level
+    renderWordZone();
     
     if (!gameActive) {
         gameActive = true;
         startTimer();
     }
     
-    alert(`📜 MEMULAI ${levelData.level_name}\nTema: ${levelData.tema}`);
     updateUI();
 }
 
-/**
- * 2. GAME LOGIC
- */
 function shuffle(array) {
     for (let i = array.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
@@ -111,7 +103,6 @@ function selectLetter(index) {
     renderHand();
 }
 
-// UPDATE: Ditambahkan pengecekan tombol Segel (Min 2 huruf)
 function renderWordZone() {
     const slots = document.querySelectorAll('.letter-slot');
     const confirmBtn = document.getElementById('confirm-btn');
@@ -125,7 +116,6 @@ function renderWordZone() {
         }
     });
 
-    // Validasi tombol Segel
     if (confirmBtn) {
         confirmBtn.disabled = selectedLetters.length < 2;
     }
@@ -152,7 +142,7 @@ function confirmWord() {
         shuffle(deck); 
         
         selectedLetters = [];
-        renderWordZone(); // Reset tombol ke disabled
+        renderWordZone();
         drawCards();
     } else {
         timeLeft -= 5;
@@ -174,9 +164,6 @@ function shuffleDeck() {
     updateUI();
 }
 
-/**
- * 3. UI & HP COLOR SYSTEM
- */
 function updateUI() {
     const hpFill = document.getElementById('hp-fill');
     if (hpFill) {
@@ -184,7 +171,8 @@ function updateUI() {
         
         if (yokaiHP <= 30) {
             hpFill.style.backgroundColor = "#ff4d4d"; 
-        } else if (yokaiHP <= 70) {<br>            hpFill.style.backgroundColor = "#f1c40f"; 
+        } else if (yokaiHP <= 70) {
+            hpFill.style.backgroundColor = "#f1c40f"; 
         } else {
             hpFill.style.backgroundColor = "#2ecc71"; 
         }
