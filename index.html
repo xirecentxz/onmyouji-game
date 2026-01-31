@@ -14,7 +14,7 @@
                 <span class="hp-text">YOKAI HP</span>
             </div>
             <div class="timer">
-                <span>⏳</span> <span id="time-val">90</span>s
+                <span id="time-val">90</span>s ⏳
             </div>
         </div>
 
@@ -29,20 +29,20 @@
         <div class="controls">
             <button onclick="clearWord()" class="btn btn-clear">Hapus</button>
             <button onclick="confirmWord()" class="btn btn-confirm">SEGEL!</button>
-            <button onclick="shuffleDeck()" class="btn btn-shuffle">Acak Deck (-5s)</button>
+            <button onclick="shuffleDeck()" class="btn btn-shuffle">Acak Deck</button>
         </div>
 
         <div class="card-area">
-            <div class="deck-visual">
+            <div class="deck-container">
                 <div class="deck-stack"></div>
-                <div class="deck-count"><span id="deck-val">46</span> Kartu</div>
+                <div class="deck-info"><span id="deck-val">46</span> Kartu</div>
             </div>
+            
             <div class="hand" id="player-hand">
                 </div>
         </div>
     </div>
 
-    <script src="dictionary.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
