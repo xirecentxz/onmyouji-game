@@ -1,5 +1,6 @@
 /**
  * KOTODAMA RITUAL - CORE ENGINE (LEVEL SYSTEM + RECYCLE DECK)
+ * Updated with Button State Validation
  */
 
 let ALL_LEVELS_DATA = null;
@@ -42,7 +43,6 @@ function initLevel(level) {
 
     const levelData = ALL_LEVELS_DATA[level];
     
-    // Level 10: Gabungan semua kata
     if (level === 10) {
         let allWords = [];
         for (let i = 1; i <= 9; i++) {
@@ -61,6 +61,7 @@ function initLevel(level) {
     
     shuffle(deck);
     drawCards();
+    renderWordZone(); // Pastikan tombol segel terkunci di awal level
     
     if (!gameActive) {
         gameActive = true;
@@ -110,8 +111,11 @@ function selectLetter(index) {
     renderHand();
 }
 
+// UPDATE: Ditambahkan pengecekan tombol Segel (Min 2 huruf)
 function renderWordZone() {
     const slots = document.querySelectorAll('.letter-slot');
+    const confirmBtn = document.getElementById('confirm-btn');
+
     slots.forEach((slot, index) => {
         slot.innerText = selectedLetters[index] || "";
         if (selectedLetters[index]) {
@@ -120,6 +124,11 @@ function renderWordZone() {
             slot.classList.remove('active');
         }
     });
+
+    // Validasi tombol Segel
+    if (confirmBtn) {
+        confirmBtn.disabled = selectedLetters.length < 2;
+    }
 }
 
 function clearWord() {
@@ -129,7 +138,6 @@ function clearWord() {
     renderHand();
 }
 
-// UPDATE: Fungsi Konfirmasi Mantra dengan Reshuffle Otomatis
 function confirmWord() {
     const word = selectedLetters.join('');
     
@@ -140,14 +148,11 @@ function confirmWord() {
         
         alert(`✨ KOTODAMA AKTIF: ${word}! HP Yokai -${damage}`);
 
-        // --- LOGIKA RECYCLE DECK ---
-        // Masukkan kembali kartu yang sukses digunakan ke dalam tumpukan deck
         deck.push(...selectedLetters); 
-        
-        // Kocok ulang deck agar kartu yang baru masuk tidak selalu di bawah
         shuffle(deck); 
         
         selectedLetters = [];
+        renderWordZone(); // Reset tombol ke disabled
         drawCards();
     } else {
         timeLeft -= 5;
@@ -178,11 +183,10 @@ function updateUI() {
         hpFill.style.width = yokaiHP + "%";
         
         if (yokaiHP <= 30) {
-            hpFill.style.backgroundColor = "#ff4d4d"; // Merah
-        } else if (yokaiHP <= 70) {
-            hpFill.style.backgroundColor = "#f1c40f"; // Kuning
+            hpFill.style.backgroundColor = "#ff4d4d"; 
+        } else if (yokaiHP <= 70) {<br>            hpFill.style.backgroundColor = "#f1c40f"; 
         } else {
-            hpFill.style.backgroundColor = "#2ecc71"; // Hijau
+            hpFill.style.backgroundColor = "#2ecc71"; 
         }
     }
 
