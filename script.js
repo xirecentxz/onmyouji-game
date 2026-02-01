@@ -1,69 +1,52 @@
-/**
- * KOTODAMA RITUAL - CORE ENGINE (LEVEL SYSTEM + RECYCLE DECK)
- */
-
 let ALL_LEVELS_DATA = null;
 let VALID_WORDS = new Set();
-const HIRAGANA_DECK = [
-    'あ','い','う','え','お','か','き','く','け','こ','さ','し','す','せ','そ',
-    'た','ち','つ','て','と','な','に','ぬ','ね','の','は','ひ','ふ','へ','ほ',
-    'ま','み','む','め','も','や','ゆ','よ','ら','り','る','れ','ろ','わ','を','ん'
-];
+// Distribusi deck sesuai dokumen [cite: 12, 13, 14]
+const DECK_DATA = {
+    3: ['ん','い','う','え','あ','し','た','の','る','か','て'],
+    2: ['さ','to','な','も','こ','は','ま','や','よ','き'],
+    1: ['り','お','く','が','ぎ','ぐ','ご','ば','ぱ','ふ','ひ','へ','ほ','わ','ち','つ']
+};
 
-let currentLevel = 1;
-let deck = [...HIRAGANA_DECK];
+let deck = [];
 let hand = [];
 let selectedLetters = [];
 let timeLeft = 90;
 let yokaiHP = 100;
 let gameActive = false;
+let comboStreak = 0;
+let lastWinTime = 0;
+let lastHintTime = 0;
+
+// Audio - Pastikan file ada di folder assets/
+const sfxCring = new Audio('assets/sfx-cring.mp3');
+const sfxExplode = new Audio('assets/sfx-explode.mp3');
+
+function buildDeck() {
+    deck = [];
+    for (let count in DECK_DATA) {
+        DECK_DATA[count].forEach(char => {
+            for (let i = 0; i < parseInt(count); i++) deck.push(char);
+        });
+    }
+    shuffle(deck);
+}
 
 async function loadDatabase() {
     try {
         const response = await fetch('database.json');
         const data = await response.json();
         ALL_LEVELS_DATA = data.levels;
-        initLevel(currentLevel);
-    } catch (error) {
-        console.error("Gagal memuat database.json:", error);
-        alert("Kitab mantra tidak ditemukan!");
-    }
+        buildDeck();
+        initLevel(1);
+    } catch (e) { console.error(e); }
 }
 
 function initLevel(level) {
-    if (!ALL_LEVELS_DATA[level]) {
-        alert("🎉 SELAMAT! Anda telah menyegel semua Yokai!");
-        location.reload();
-        return;
-    }
-
     const levelData = ALL_LEVELS_DATA[level];
-    
-    if (level === 10) {
-        let allWords = [];
-        for (let i = 1; i <= 9; i++) {
-            allWords = allWords.concat(ALL_LEVELS_DATA[i].words);
-        }
-        VALID_WORDS = new Set(allWords);
-    } else {
-        VALID_WORDS = new Set(levelData.words);
-    }
-
-    yokaiHP = 100;
-    timeLeft = 90;
-    deck = [...HIRAGANA_DECK];
-    hand = [];
-    selectedLetters = [];
-    
-    shuffle(deck);
+    VALID_WORDS = new Set(levelData.words);
+    yokaiHP = 100; timeLeft = 90; hand = []; selectedLetters = [];
     drawCards();
-    renderWordZone();
-    
-    if (!gameActive) {
-        gameActive = true;
-        startTimer();
-    }
-    
+    if (!gameActive) { gameActive = true; startTimer(); }
     updateUI();
 }
 
@@ -74,150 +57,146 @@ function shuffle(array) {
     }
 }
 
+// Logic agar kartu yang keluar pasti bisa jadi kata
 function drawCards() {
-    while (hand.length < 5 && deck.length > 0) {
-        hand.push(deck.shift());
+    let attempts = 0;
+    while (hand.length < 7 && deck.length >= 7) {
+        let trialHand = deck.slice(0, 7);
+        if (canFormAnyWord(trialHand) || attempts > 15) {
+            hand.push(...deck.splice(0, 7 - hand.length));
+            break;
+        }
+        shuffle(deck);
+        attempts++;
     }
     renderHand();
     updateUI();
 }
 
-function renderHand() {
-    const handEl = document.getElementById('player-hand');
-    if (!handEl) return;
-    handEl.innerHTML = '';
-    hand.forEach((char, index) => {
-        const card = document.createElement('div');
-        card.className = 'card';
-        card.innerText = char;
-        card.onclick = () => selectLetter(index);
-        handEl.appendChild(card);
-    });
+function canFormAnyWord(testHand) {
+    for (let word of VALID_WORDS) {
+        let temp = [...testHand];
+        let match = 0;
+        for (let c of word) {
+            let i = temp.indexOf(c);
+            if (i !== -1) { match++; temp[i] = null; }
+        }
+        if (match === word.length) return true;
+    }
+    return false;
 }
 
-function selectLetter(index) {
+function selectLetter(i) {
     if (selectedLetters.length >= 5) return;
-    const char = hand.splice(index, 1)[0];
-    selectedLetters.push(char);
+    selectedLetters.push(hand.splice(i, 1)[0]);
     renderWordZone();
     renderHand();
+}
+
+function addSupport(char) {
+    if (selectedLetters.length >= 5) return;
+    selectedLetters.push(char);
+    renderWordZone();
 }
 
 function renderWordZone() {
     const slots = document.querySelectorAll('.letter-slot');
-    const confirmBtn = document.getElementById('confirm-btn');
-
-    slots.forEach((slot, index) => {
-        slot.innerText = selectedLetters[index] || "";
-        if (selectedLetters[index]) {
-            slot.classList.add('active');
-        } else {
-            slot.classList.remove('active');
-        }
+    slots.forEach((s, i) => {
+        s.innerText = selectedLetters[i] || "";
+        s.classList.toggle('active', !!selectedLetters[i]);
     });
-
-    if (confirmBtn) {
-        confirmBtn.disabled = selectedLetters.length < 2;
-    }
-}
-
-function clearWord() {
-    hand.push(...selectedLetters);
-    selectedLetters = [];
-    renderWordZone();
-    renderHand();
+    document.getElementById('confirm-btn').disabled = selectedLetters.length < 2; [cite: 21]
 }
 
 function confirmWord() {
     const word = selectedLetters.join('');
-    
     if (VALID_WORDS.has(word)) {
-        const damage = word.length * 20;
-        yokaiHP = Math.max(0, yokaiHP - damage);
-        timeLeft += 5; 
-        
-        alert(`✨ KOTODAMA AKTIF: ${word}! HP Yokai -${damage}`);
+        sfxExplode.play();
+        // Combo Streak [Bonus Waktu]
+        let now = Date.now();
+        if (now - lastWinTime < 6000) { comboStreak++; timeLeft += 2; } 
+        else { comboStreak = 1; }
+        lastWinTime = now;
 
-        deck.push(...selectedLetters); 
-        shuffle(deck); 
+        const damage = (word.length * 20) + (comboStreak * 5); [cite: 24, 25]
+        yokaiHP = Math.max(0, yokaiHP - damage);
         
+        deck.push(...selectedLetters.filter(c => !['ゃ','ゅ','ょ','っ'].includes(c)));
+        shuffle(deck);
         selectedLetters = [];
-        renderWordZone();
         drawCards();
     } else {
-        timeLeft -= 5;
-        alert(`💀 ${word} bukan mantra valid!`);
+        alert("Bukan Mantra!");
         clearWord();
     }
+    renderWordZone();
     updateUI();
 }
 
 function shuffleDeck() {
-    if (timeLeft <= 5) return;
-    timeLeft -= 5;
-    deck.push(...hand, ...selectedLetters);
-    hand = [];
-    selectedLetters = [];
+    if (timeLeft <= 3) return;
+    timeLeft -= 3; [cite: 33]
+    deck.push(...hand, ...selectedLetters.filter(c => !['ゃ','ゅ','ょ','っ'].includes(c))); [cite: 34]
+    hand = []; selectedLetters = [];
     shuffle(deck);
     drawCards();
     renderWordZone();
     updateUI();
 }
 
-function updateUI() {
-    const hpFill = document.getElementById('hp-fill');
-    if (hpFill) {
-        hpFill.style.width = yokaiHP + "%";
-        
-        if (yokaiHP <= 30) {
-            hpFill.style.backgroundColor = "#ff4d4d"; 
-        } else if (yokaiHP <= 70) {
-            hpFill.style.backgroundColor = "#f1c40f"; 
-        } else {
-            hpFill.style.backgroundColor = "#2ecc71"; 
-        }
-    }
-
-    const timerEl = document.getElementById('time-val');
-    if (timerEl) timerEl.innerText = timeLeft;
-
-    const deckVal = document.getElementById('deck-val');
-    if (deckVal) deckVal.innerText = deck.length;
-
-    if (yokaiHP <= 0 && gameActive) {
-        checkLevelClear();
-    }
+function clearWord() {
+    selectedLetters.forEach(c => { if (!['ゃ','ゅ','ょ','っ'].includes(c)) hand.push(c); });
+    selectedLetters = [];
+    renderHand();
+    renderWordZone();
 }
 
-function checkLevelClear() {
-    gameActive = false;
-    setTimeout(() => {
-        const next = confirm(`✨ RITUAL BERHASIL!\nLevel ${currentLevel} Selesai.\nLanjut ke Level Berikutnya?`);
-        if (next) {
-            currentLevel++;
-            initLevel(currentLevel);
-        } else {
-            location.reload();
+function showHint() {
+    if (Date.now() - lastHintTime < 5000) return; [cite: 28, 35]
+    sfxCring.play();
+    let cardCount = {};
+    VALID_WORDS.forEach(word => {
+        let temp = [...hand];
+        let matchIndices = [];
+        for (let c of word) {
+            let idx = temp.indexOf(c);
+            if (idx !== -1) { matchIndices.push(idx); temp[idx] = null; }
+            else { matchIndices = []; break; }
         }
-    }, 500);
+        matchIndices.forEach(idx => cardCount[idx] = (cardCount[idx] || 0) + 1);
+    });
+
+    const cardEls = document.querySelectorAll('.hand .card');
+    for (let idx in cardCount) {
+        if (cardCount[idx] === 1) cardEls[idx].classList.add('hint-glow');
+        if (cardCount[idx] >= 2) cardEls[idx].classList.add('super-hint');
+    }
+
+    setTimeout(() => {
+        cardEls.forEach(c => c.classList.remove('hint-glow', 'super-hint'));
+    }, 2000);
+    
+    lastHintTime = Date.now();
+    const btn = document.getElementById('hint-btn');
+    btn.disabled = true;
+    setTimeout(() => btn.disabled = false, 5000);
+}
+
+function updateUI() {
+    const hpFill = document.getElementById('hp-fill');
+    hpFill.style.width = yokaiHP + "%";
+    hpFill.style.backgroundColor = yokaiHP < 30 ? "#ff4d4d" : (yokaiHP < 70 ? "#f1c40f" : "#2ecc71");
+    document.getElementById('time-val').innerText = timeLeft;
+    document.getElementById('deck-val').innerText = deck.length;
+    if (yokaiHP <= 0 && gameActive) checkLevelClear();
 }
 
 function startTimer() {
-    const timerEl = document.getElementById('time-val');
-    const interval = setInterval(() => {
-        if (!gameActive) {
-            if (yokaiHP <= 0) return; 
-            clearInterval(interval); 
-            return; 
-        }
-        
-        timeLeft--;
-        if (timerEl) timerEl.innerText = timeLeft;
-        
-        if (timeLeft <= 0) {
-            clearInterval(interval);
-            alert("💀 WAKTU HABIS! Yokai menyerang!");
-            location.reload();
+    setInterval(() => {
+        if (gameActive && timeLeft > 0) {
+            timeLeft--;
+            updateUI();
+            if (timeLeft <= 0) { alert("Waktu Habis!"); location.reload(); }
         }
     }, 1000);
 }
