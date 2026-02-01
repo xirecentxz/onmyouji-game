@@ -77,7 +77,7 @@ function updateUI() {
 function confirmWord() {
     const word = selectedLetters.join('');
     if (VALID_WORDS.has(word)) {
-        yokaiHP = Math.max(0, yokaiHP - (word.length * 25));
+        yokaiHP = Math.max(0, yokaiHP - (word.length * 10));
         const main = selectedLetters.filter(c => !['ゃ','ゅ','ょ','っ'].includes(c));
         deck.push(...main); 
         shuffle(deck);
