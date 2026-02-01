@@ -2,6 +2,7 @@ let ALL_LEVELS_DATA = null;
 let VALID_WORDS = new Set();
 let currentLevel = 1;
 
+// Pembersihan Hiragana murni berdasarkan dokumen desain 
 const DECK_DATA = {
     3: ['ん','い','う','え','あ','し','た','の','る','か','て'],
     2: ['さ','と','な','も','こ','は','ま','や','よ','き'],
@@ -10,16 +11,15 @@ const DECK_DATA = {
 
 let deck = []; let hand = []; let selectedLetters = [];
 let timeLeft = 90; let yokaiHP = 100; let gameActive = false;
-let timerInterval = null;
+let timerInt = null;
 
 async function loadDatabase() {
     try {
         const res = await fetch('database.json');
         const data = await res.json();
         ALL_LEVELS_DATA = data.levels;
-        buildDeck();
         initLevel(currentLevel);
-    } catch (e) { console.error("Database Error", e); }
+    } catch (e) { console.error("Database error", e); }
 }
 
 function buildDeck() {
@@ -32,65 +32,50 @@ function buildDeck() {
 
 function initLevel(level) {
     currentLevel = level;
-    const levelData = ALL_LEVELS_DATA[level];
-    if (!levelData) return;
+    const data = ALL_LEVELS_DATA[level];
+    if(!data) return;
 
-    VALID_WORDS = new Set(levelData.words);
-    yokaiHP = 100;
-    timeLeft = 90;
-    hand = [];
-    selectedLetters = [];
+    VALID_WORDS = new Set(data.words);
+    yokaiHP = 100; timeLeft = 90; hand = []; selectedLetters = [];
     
-    // Update Banner Info
-    document.getElementById('level-banner').innerText = `Level ${level} (${levelData.category})`;
+    document.getElementById('level-banner').innerText = `Level ${level} (${data.category})`;
     document.getElementById('modal-overlay').style.display = 'none';
     
     buildDeck();
     drawCards();
     updateUI();
-    
-    if (!gameActive) {
-        gameActive = true;
-        startTimer();
-    }
+    if (!gameActive) { gameActive = true; startTimer(); }
 }
 
 function startTimer() {
-    if (timerInterval) clearInterval(timerInterval);
-    timerInterval = setInterval(() => {
+    if(timerInt) clearInterval(timerInt);
+    timerInt = setInterval(() => {
         if (gameActive && timeLeft > 0) {
-            timeLeft--;
-            updateUI();
-            if (timeLeft <= 0) {
-                gameActive = false;
-                showEndModal(false);
-            }
+            timeLeft--; updateUI();
+            if (timeLeft <= 0) { gameActive = false; showEndModal(false); }
         }
     }, 1000);
 }
 
 function updateUI() {
-    document.getElementById('hp-fill').style.width = yokaiHP + "%";
+    const fill = document.getElementById('hp-fill');
+    if (fill) fill.style.width = yokaiHP + "%";
     document.getElementById('time-val').innerText = timeLeft;
     document.getElementById('deck-val').innerText = deck.length;
 }
 
-// Fungsi Menang / Kalah
 function confirmWord() {
     const word = selectedLetters.join('');
     if (VALID_WORDS.has(word)) {
+        // Damage berdasarkan panjang kata [cite: 24]
         yokaiHP = Math.max(0, yokaiHP - (word.length * 25));
-        const mainCards = selectedLetters.filter(c => !['ゃ','ゅ','ょ','っ'].includes(c));
-        deck.push(...mainCards);
+        const main = selectedLetters.filter(c => !['ゃ','ゅ','ょ','っ'].includes(c));
+        deck.push(...main); 
         shuffle(deck);
-        selectedLetters = [];
-        drawCards();
+        selectedLetters = []; 
+        drawCards(); 
         renderWordZone();
-        
-        if (yokaiHP <= 0) {
-            gameActive = false;
-            showEndModal(true);
-        }
+        if (yokaiHP <= 0) { gameActive = false; showEndModal(true); }
     } else {
         clearWord();
     }
@@ -100,29 +85,20 @@ function confirmWord() {
 function showEndModal(isWin) {
     const overlay = document.getElementById('modal-overlay');
     const title = document.getElementById('modal-title');
-    const desc = document.getElementById('modal-desc');
     const btnNext = document.getElementById('btn-next');
     const btnPrev = document.getElementById('btn-prev');
 
     overlay.style.display = 'flex';
-    
-    if (isWin) {
+    if(isWin) {
         title.innerText = "RITUAL BERHASIL!";
         title.style.color = "#d4af37";
-        desc.innerText = `Yokai Level ${currentLevel} telah tersegel.`;
     } else {
         title.innerText = "RITUAL GAGAL!";
         title.style.color = "#ff4d4d";
-        desc.innerText = "Waktu habis, Yokai menyerangmu.";
     }
 
-    // Navigasi Tombol
     btnPrev.style.display = (currentLevel > 1) ? "block" : "none";
     btnNext.style.display = (isWin && currentLevel < 10) ? "block" : "none";
-}
-
-function retryLevel() {
-    initLevel(currentLevel);
 }
 
 function changeLevel(delta) {
@@ -130,23 +106,38 @@ function changeLevel(delta) {
     initLevel(currentLevel);
 }
 
-// Fungsi pendukung lainnya (drawCards, renderHand, dll) tetap sama
-function shuffle(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-    }
+function retryLevel() {
+    initLevel(currentLevel);
 }
 
 function drawCards() {
+    // Selalu memegang 7 kartu [cite: 7, 20]
     while (hand.length < 7 && deck.length >= 7) {
-        hand.push(...deck.splice(0, 7 - hand.length));
+        let trial = deck.slice(0, 7);
+        if (canFormWord(trial) || deck.length < 14) {
+            hand.push(...deck.splice(0, 7 - hand.length));
+            break;
+        }
+        shuffle(deck);
     }
     renderHand();
 }
 
+function canFormWord(test) {
+    for (let w of VALID_WORDS) {
+        let t = [...test]; let m = 0;
+        for (let c of w) {
+            let i = t.indexOf(c);
+            if (i !== -1) { m++; t[i] = null; }
+        }
+        if (m === w.length) return true;
+    }
+    return false;
+}
+
 function renderHand() {
     const el = document.getElementById('player-hand');
+    if (!el) return;
     el.innerHTML = '';
     hand.forEach((c, i) => {
         const card = document.createElement('div');
@@ -162,6 +153,7 @@ function renderHand() {
 }
 
 function addSupport(c) {
+    // Support card untuk membantu membuat kata [cite: 16, 28, 35]
     if (selectedLetters.length < 5) {
         selectedLetters.push(c);
         renderWordZone();
@@ -174,6 +166,7 @@ function renderWordZone() {
         s.innerText = selectedLetters[i] || "";
         s.classList.toggle('active', !!selectedLetters[i]);
     });
+    // Validasi minimal 2 kartu untuk menyala [cite: 21]
     document.getElementById('confirm-btn').disabled = selectedLetters.length < 2;
 }
 
@@ -183,26 +176,34 @@ function clearWord() {
 }
 
 function shuffleDeck() {
+    // Penalti waktu 3 detik saat shuffle [cite: 33]
     if (timeLeft <= 3) return;
     timeLeft -= 3;
-    const mainCards = hand.concat(selectedLetters.filter(c => !['ゃ','ゅ','ょ','っ'].includes(c)));
-    deck.push(...mainCards);
-    hand = []; selectedLetters = [];
+    const main = hand.concat(selectedLetters.filter(c => !['ゃ','ゅ','ょ','っ'].includes(c)));
+    deck.push(...main); hand = []; selectedLetters = [];
     shuffle(deck); drawCards(); renderWordZone(); updateUI();
 }
 
 function showHint() {
+    // Onmyouroku sebagai cheat database [cite: 28, 35]
     const cards = document.querySelectorAll('.hand .card');
     VALID_WORDS.forEach(w => {
-        let temp = [...hand]; let match = [];
+        let t = [...hand]; let match = [];
         for (let c of w) {
-            let idx = temp.indexOf(c);
-            if (idx !== -1) { match.push(idx); temp[idx] = null; }
+            let idx = t.indexOf(c);
+            if (idx !== -1) { match.push(idx); t[idx] = null; }
             else { match = []; break; }
         }
         match.forEach(idx => cards[idx].classList.add('hint-glow'));
     });
     setTimeout(() => cards.forEach(c => c.classList.remove('hint-glow')), 2000);
+}
+
+function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+    }
 }
 
 window.onload = loadDatabase;
