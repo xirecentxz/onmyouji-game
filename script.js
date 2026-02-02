@@ -1,11 +1,30 @@
 let ALL_LEVELS_DATA = null;
 let VALID_WORDS = new Set();
 let currentLevel = 1;
+let isRomajiVisible = false; // Default: OFF
+
+// PEMETAAN ROMAJI
+const ROMAJI_MAP = {
+    'あ': 'a', 'い': 'i', 'う': 'u', 'え': 'e', 'お': 'o',
+    'か': 'ka', 'き': 'ki', 'く': 'ku', 'け': 'ke', 'こ': 'ko',
+    'さ': 'sa', 'し': 'shi', 'す': 'su', 'せ': 'se', 'そ': 'so',
+    'た': 'ta', 'ち': 'chi', 'つ': 'tsu', 'て': 'te', 'と': 'to',
+    'な': 'na', 'に': 'ni', 'ぬ': 'nu', 'ね': 'ne', 'の': 'no',
+    'は': 'ha', 'ひ': 'hi', 'ふ': 'fu', 'へ': 'he', 'ほ': 'ho',
+    'ま': 'ma', 'み': 'mi', 'む': 'mu', 'め': 'me', 'も': 'mo',
+    'や': 'ya', 'ゆ': 'yu', 'よ': 'yo',
+    'ら': 'ra', 'り': 'ri', 'る': 'ru', 'れ': 're', 'ろ': 'ro',
+    'わ': 'wa', 'を': 'wo', 'ん': 'n',
+    'が': 'ga', 'ぎ': 'gi', 'ぐ': 'gu', 'げ': 'ge', 'ご': 'go',
+    'ば': 'ba', 'び': 'bi', 'ぶ': 'bu', 'べ': 'be', 'ぼ': 'bo',
+    'ぱ': 'pa', 'ぴ': 'pi', 'ぷ': 'pu', 'ぺ': 'pe', 'ぽ': 'po',
+    'ゃ': 'ya', 'ゅ': 'yu', 'ょ': 'yo', 'っ': '(stop)'
+};
 
 const DECK_DATA = {
     3: ['ん','い','う','え','あ','し','た','の','る','か','て'],
-    2: ['さ','と','な','も','こ','は','ま','や','よ','き'],
-    1: ['り','お','く','가','ぎ','ぐ','ご','ば','ぱ','ふ','ひ','へ','ほ','わ','ち','つ']
+    2: ['さ','と','na','も','こ','は','ま','ya','yo','き'],
+    1: ['り','お','く','가','ぎ','ぐ','ご','ba','pa','ふ','ひ','へ','ほ','わ','ち','つ']
 };
 
 let deck = []; let hand = []; let selectedLetters = [];
@@ -13,11 +32,24 @@ let timeLeft = 90; let yokaiHP = 100; let gameActive = false;
 let timerInt = null;
 let hasUsedHintThisLevel = false;
 
+// FUNGSI TOGGLE ROMAJI
+function toggleRomaji() {
+    isRomajiVisible = !isRomajiVisible;
+    const btn = document.getElementById('romaji-toggle-btn');
+    btn.innerText = `Romaji: ${isRomajiVisible ? 'ON' : 'OFF'}`;
+    
+    // Update semua elemen kartu secara real-time
+    renderHand();
+    renderWordZone();
+    renderSupportButtons();
+}
+
 async function loadDatabase() {
     try {
         const res = await fetch('database.json');
         const data = await res.json();
         ALL_LEVELS_DATA = data.levels;
+        renderSupportButtons(); // Inisialisasi awal
         initLevel(currentLevel);
     } catch (e) { console.error("Database error", e); }
 }
@@ -77,6 +109,7 @@ function updateUI() {
 function confirmWord() {
     const word = selectedLetters.join('');
     if (VALID_WORDS.has(word)) {
+        // Damage minimal 5 hit neko (100 HP / (2 huruf * 10 dmg) = 5 hit)
         yokaiHP = Math.max(0, yokaiHP - (word.length * 10));
         const main = selectedLetters.filter(c => !['ゃ','ゅ','ょ','っ'].includes(c));
         deck.push(...main); 
@@ -85,7 +118,6 @@ function confirmWord() {
         drawCards(); 
         if (yokaiHP <= 0) { gameActive = false; showEndModal(true); }
     } else {
-        // Penalti -5 detik dan flash merah
         timeLeft = Math.max(0, timeLeft - 5);
         showFlashError();
         clearWord();
@@ -94,7 +126,6 @@ function confirmWord() {
     updateUI();
 }
 
-// Efek Visual Flash Merah (Digunakan untuk Salah Mantra & Acak Deck)
 function showFlashError() {
     const timerSection = document.querySelector('.timer-section');
     if(timerSection) {
@@ -107,50 +138,13 @@ function showFlashError() {
     }
 }
 
-// UPDATE: Sekarang memicu Flash Merah saat memotong -3 detik
 function shuffleDeck() {
     if (timeLeft <= 3) return;
-    
     timeLeft -= 3;
-    showFlashError(); // Efek merah sekarang aktif di sini
-    
+    showFlashError();
     const main = hand.concat(selectedLetters.filter(c => !['ゃ','ゅ','ょ','っ'].includes(c)));
-    deck.push(...main); 
-    hand = []; 
-    selectedLetters = [];
-    
-    shuffle(deck); 
-    drawCards(); 
-    renderWordZone(); 
-    updateUI();
-}
-
-function showEndModal(isWin) {
-    const overlay = document.getElementById('modal-overlay');
-    const title = document.getElementById('modal-title');
-    const btnNext = document.getElementById('btn-next');
-    const btnPrev = document.getElementById('btn-prev');
-
-    overlay.style.display = 'flex';
-    if(isWin) {
-        title.innerText = "RITUAL BERHASIL!";
-        title.style.color = "#d4af37";
-    } else {
-        title.innerText = "RITUAL GAGAL!";
-        title.style.color = "#ff4d4d";
-    }
-
-    btnPrev.style.display = (currentLevel > 1) ? "block" : "none";
-    btnNext.style.display = (isWin && currentLevel < 10) ? "block" : "none";
-}
-
-function changeLevel(delta) {
-    currentLevel += delta;
-    initLevel(currentLevel);
-}
-
-function retryLevel() {
-    initLevel(currentLevel);
+    deck.push(...main); hand = []; selectedLetters = [];
+    shuffle(deck); drawCards(); renderWordZone(); updateUI();
 }
 
 function drawCards() {
@@ -177,13 +171,20 @@ function canFormWord(test) {
     return false;
 }
 
+// RENDER HAND
 function renderHand() {
     const el = document.getElementById('player-hand');
     if (!el) return;
     el.innerHTML = '';
+    const hiddenClass = isRomajiVisible ? '' : 'hidden'; 
+    
     hand.forEach((c, i) => {
         const card = document.createElement('div');
-        card.className = 'card'; card.innerText = c;
+        card.className = 'card';
+        card.innerHTML = `
+            <div class="kana">${c}</div>
+            <div class="romaji ${hiddenClass}">${ROMAJI_MAP[c] || ''}</div>
+        `;
         card.onclick = () => {
             if (selectedLetters.length < 5) {
                 selectedLetters.push(hand.splice(i, 1)[0]);
@@ -194,25 +195,44 @@ function renderHand() {
     });
 }
 
-function addSupport(c) {
-    if (selectedLetters.length < 5) {
-        selectedLetters.push(c);
-        renderWordZone();
-    }
-}
-
+// RENDER FIELD / WORD ZONE
 function renderWordZone() {
     const slots = document.querySelectorAll('.letter-slot');
+    const hiddenClass = isRomajiVisible ? '' : 'hidden';
+
     slots.forEach((s, i) => {
-        s.innerText = selectedLetters[i] || "";
-        s.classList.toggle('active', !!selectedLetters[i]);
+        const char = selectedLetters[i];
+        if (char) {
+            s.innerHTML = `
+                <div class="kana-small">${char}</div>
+                <div class="romaji-tiny ${hiddenClass}">${ROMAJI_MAP[char] || ''}</div>
+            `;
+            s.classList.add('active');
+        } else {
+            s.innerHTML = "";
+            s.classList.remove('active');
+        }
     });
     document.getElementById('confirm-btn').disabled = selectedLetters.length < 2;
 }
 
-function clearWord() {
-    selectedLetters.forEach(c => { if (!['ゃ','ゅ','ょ','っ'].includes(c)) hand.push(c); });
-    selectedLetters = []; renderHand(); renderWordZone();
+// RENDER KARTU BANTU
+function renderSupportButtons() {
+    const container = document.getElementById('support-container');
+    const supports = ['ゃ', 'ゅ', 'ょ', 'っ'];
+    const hiddenClass = isRomajiVisible ? '' : 'hidden';
+
+    container.innerHTML = '';
+    supports.forEach(s => {
+        const btn = document.createElement('button');
+        btn.className = 'btn-support';
+        btn.innerHTML = `
+            <span>${s}</span>
+            <span class="romaji-support ${hiddenClass}">${ROMAJI_MAP[s] || ''}</span>
+        `;
+        btn.onclick = () => addSupport(s);
+        container.appendChild(btn);
+    });
 }
 
 function showHint() {
@@ -243,5 +263,30 @@ function shuffle(array) {
         [array[i], array[j]] = [array[j], array[i]];
     }
 }
+
+function clearWord() {
+    selectedLetters.forEach(c => { if (!['ゃ','ゅ','ょ','っ'].includes(c)) hand.push(c); });
+    selectedLetters = []; renderHand(); renderWordZone();
+}
+
+function addSupport(c) {
+    if (selectedLetters.length < 5) {
+        selectedLetters.push(c);
+        renderWordZone();
+    }
+}
+
+function showEndModal(isWin) {
+    const overlay = document.getElementById('modal-overlay');
+    const title = document.getElementById('modal-title');
+    overlay.style.display = 'flex';
+    title.innerText = isWin ? "RITUAL BERHASIL!" : "RITUAL GAGAL!";
+    title.style.color = isWin ? "#d4af37" : "#ff4d4d";
+    document.getElementById('btn-prev').style.display = (currentLevel > 1) ? "block" : "none";
+    document.getElementById('btn-next').style.display = (isWin && currentLevel < 10) ? "block" : "none";
+}
+
+function changeLevel(delta) { currentLevel += delta; initLevel(currentLevel); }
+function retryLevel() { initLevel(currentLevel); }
 
 window.onload = loadDatabase;
