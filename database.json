@@ -6,7 +6,7 @@
       "words": [
         "たぬき", "しか", "はと", "かも", "さめ", "かに", "たこ", "いか", 
         "かめ", "あり", "はえ", "かえる", "くも", "きつね", "ねこ", 
-        "いぬ", "とり", "さかな", "くま", "うし", "うま", "さる", 
+        "いぬ", "とり", "さkana", "くま", "うし", "うま", "さる", 
         "とら", "りす"
       ],
       "translations": {
@@ -66,13 +66,13 @@
       "level_name": "Level 5: Peta Dunia",
       "category": "Tempat",
       "words": [
-        "いえ", "えき", "やま", "うmi", "まち", "みち", 
+        "いえ", "えき", "やま", "うみ", "まち", "みち", 
         "そら", "こうえん", "ぎんこう", "がっこう", "びょういん"
       ],
       "translations": {
         "いえ": "Rumah", "えき": "Stasiun", "やま": "Gunung", "うみ": "Laut", 
         "まち": "Kota", "みち": "Jalan", "そら": "Langit", 
-        "こうえん": "Taman", "ぎんこう": "Bank", "가っこう": "Sekolah", 
+        "こうえん": "Taman", "ぎんこう": "Bank", "がっこう": "Sekolah", 
         "びょういん": "Rumah Sakit"
       }
     },
@@ -80,12 +80,12 @@
       "level_name": "Level 6: Ikatan Darah",
       "category": "Keluarga",
       "words": [
-        "はは", "ちち", "あね", "あに", "おとうと", 
+        "はは", "ちち", "あね", "あni", "おとうと", 
         "いもうと", "そぼ", "そふ", "かぞく", "こども"
       ],
       "translations": {
         "はは": "Ibu (saya)", "ちち": "Ayah (saya)", "あね": "Kakak Pr", 
-        "あに": "Kakak Lk", "おとうto": "Adik Lk", "いもうto": "Adik Pr", 
+        "あに": "Kakak Lk", "おとうと": "Adik Lk", "いもうと": "Adik Pr", 
         "そぼ": "Nenek", "そふ": "Kakek", "かぞく": "Keluarga", "こども": "Anak"
       }
     },
@@ -94,7 +94,7 @@
       "category": "Benda",
       "words": [
         "ほん", "くつ", "かさ", "かみ", "つくえ", 
-        "いす", "かばん", "とけい", "めがne", "さいふ"
+        "いす", "かばん", "とけい", "めがね", "さいふ"
       ],
       "translations": {
         "ほん": "Buku", "くつ": "Sepatu", "かさ": "Payung", "かみ": "Kertas", 
@@ -136,7 +136,7 @@
         "ともだち", "たべもの", "のみもの", "くだもの"
       ],
       "translations": {
-        "にほんご": "Bahasa Jepang", "せんせい": "Guru", "가くせい": "Siswa", 
+        "にほんご": "Bahasa Jepang", "せんせい": "Guru", "がくせい": "Siswa", 
         "じてんしゃ": "Sepeda", "ともだち": "Teman", "たべもの": "Makanan", 
         "のみもの": "Minuman", "くだもの": "Buah"
       }
